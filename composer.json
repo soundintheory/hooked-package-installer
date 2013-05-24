@@ -6,7 +6,7 @@
     "homepage": "https://github.com/soundintheory/hooked-package-installer",
     "license": "MIT",
     "autoload": {
-        "psr-0": {"CMF\\Composer": "src/"}
+        "psr-0": {"CMF\\": "src/"}
     },
     "extra": {
         "class": "\\CMF\\Composer\\HookedPackageInstaller"
