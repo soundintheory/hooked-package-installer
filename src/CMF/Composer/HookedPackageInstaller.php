@@ -14,7 +14,7 @@ namespace CMF\Composer;
 use Composer\Repository\InstalledRepositoryInterface;
 use Composer\Package\PackageInterface;
 
-class UnifiedAssetInstaller extends \Composer\Installer\LibraryInstaller
+class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
 {
     /**
      * {@inheritDoc}
