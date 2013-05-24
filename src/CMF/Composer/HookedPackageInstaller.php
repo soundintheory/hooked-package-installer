@@ -70,9 +70,9 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
      */
     public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
     {
-        $this->callHook('pre-package-update', $package);
+        $this->callHook('pre-package-update', $target);
         parent::update($repo, $initial, $target);
-        $this->callHook('post-package-update', $package);
+        $this->callHook('post-package-update', $target);
     }
 
     /**
@@ -95,6 +95,9 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
     {
         // $composer, $package
         $extra = $package->getExtra();
+        print("\n HOOK: $hookName\n");
+        print_r($extra);
+        
         if (empty($extra[$hookName])) return;
         
         $command = $extra[$hookName];
