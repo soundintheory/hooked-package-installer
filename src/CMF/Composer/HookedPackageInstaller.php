@@ -16,6 +16,8 @@ use Composer\Package\PackageInterface;
 
 class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
 {
+    protected $loader;
+    
     /**
      * {@inheritDoc}
      */
@@ -60,7 +62,6 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
      */
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
-        $this->callHook('pre-package-install', $package);
         parent::install($repo, $package);
         $this->callHook('post-package-install', $package);
     }
@@ -94,21 +95,15 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
     protected function callHook($hookName, PackageInterface $package)
     {
         // $composer, $package
+        $this->initAutoloader();
         $extra = $package->getExtra();
-        print("\n HOOK: $hookName\n");
-        print_r($extra);
         
         if (empty($extra[$hookName])) return;
         
         $command = $extra[$hookName];
-        $callable = is_callable($command);
-        if (strpos($command, '::') !== false) {
-            $parts = explode('::', $command);
-            $class = $parts[0];
-            $exists = class_exists($class);
-            print("\n".$hookName.": ".$class." ".($exists ? "does exist" : "doesn't exist")."\n");
+        if (is_callable($command)) {
+            $command($package, $this->composer);
         }
-        print("\n".$hookName.": ".$command." is ".($callable ? "callable" : "not callable")."\n");
     }
 
     /**
@@ -131,6 +126,37 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
         }
 
         return $path;
+    }
+    
+    /**
+     * Initialises the autoloader for the package
+     * 
+     */
+    protected function initAutoloader()
+    {
+        if ($this->loader) {
+            $this->loader->unregister();
+        }
+        
+        $package = $this->composer->getPackage();
+        $generator = $this->composer->getAutoloadGenerator();
+        $packages = $this->composer->getRepositoryManager()->getLocalRepository()->getCanonicalPackages();
+        $packageMap = $generator->buildPackageMap($this->composer->getInstallationManager(), $package, $packages);
+        $map = $generator->parseAutoloads($packageMap, $package);
+        
+        $this->loader = $generator->createLoader($map);
+        $this->loader->register();
+    }
+    
+    /**
+     * Checks if string given references a class path and method
+     *
+     * @param  string  $callable
+     * @return boolean
+     */
+    protected function isPhpScript($callable)
+    {
+        return false === strpos($callable, ' ') && false !== strpos($callable, '::');
     }
 
     /**
