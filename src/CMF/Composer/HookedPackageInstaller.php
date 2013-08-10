@@ -102,7 +102,7 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
         
         $command = $extra[$hookName];
         if (is_callable($command)) {
-            $command($package, $this->composer);
+            call_user_func($command, $package, $this->composer);
         }
     }
 
