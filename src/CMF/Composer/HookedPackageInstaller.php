@@ -13,6 +13,7 @@ namespace CMF\Composer;
 
 use Composer\Repository\InstalledRepositoryInterface;
 use Composer\Package\PackageInterface;
+use Composer\Script\ScriptEvents;
 
 class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
 {
@@ -63,7 +64,7 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
         parent::install($repo, $package);
-        $this->callHook('post-package-install', $package);
+        $this->initHook('post-package-install', $package, ScriptEvents::POST_AUTOLOAD_DUMP);
     }
 
     /**
@@ -87,7 +88,28 @@ class HookedPackageInstaller extends \Composer\Installer\LibraryInstaller
     }
     
     /**
-     * Attempts to call a hook
+     * Attaches an event to be called by composer via the main event dispatcher
+     * 
+     * @param  string           $hookName
+     * @param  PackageInterface $package
+     */
+    protected function initHook($hookName, PackageInterface $package, $scriptEventName)
+    {
+        $extra = $package->getExtra();
+        if (empty($extra[$hookName])) return;
+        $command = $extra[$hookName];
+        
+        if ($rootPackage = $this->composer->getPackage()) {
+            $scripts = $rootPackage->getScripts();
+            $listeners = isset($scripts[$scriptEventName]) ? $scripts[$scriptEventName] : array();
+            $listeners[] = $command;
+            $scripts[$scriptEventName] = $listeners;
+            $rootPackage->setScripts($scripts);
+        }
+    }
+    
+    /**
+     * Attempts to call a hook directly
      * 
      * @param  string           $hookName
      * @param  PackageInterface $package
